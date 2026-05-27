@@ -179,12 +179,15 @@
             <span><i class="fas fa-user-graduate"></i> <strong>Leonardo Carrasco Ocon</strong> — Autor & Desarrollador | <span class="badge-ia"><i class="fas fa-microchip"></i> IA Integrada</span></span>
             <div style="display:flex;gap:0.5rem;align-items:center">
                 <span id="sesionEstado" style="font-size:0.72rem;color:#8bb3cc"></span>
-                <button id="btnGuardarSesion" style="background:#1a5c2a;margin:0;padding:0.4rem 0.9rem;font-size:0.78rem">
-                    <i class="fas fa-save"></i> Guardar sesión
+                <button id="btnGuardarSesion" style="background:#1a5c2a;margin:0;padding:0.4rem 0.9rem;font-size:0.78rem"
+                    title="Descarga un archivo JSON con todos tus datos">
+                    <i class="fas fa-download"></i> Guardar sesión
                 </button>
-                <button id="btnCargarSesion" style="background:#1f6d7a;margin:0;padding:0.4rem 0.9rem;font-size:0.78rem">
-                    <i class="fas fa-folder-open"></i> Cargar sesión
+                <button id="btnCargarSesion" style="background:#1f6d7a;margin:0;padding:0.4rem 0.9rem;font-size:0.78rem"
+                    title="Carga un archivo JSON guardado anteriormente">
+                    <i class="fas fa-upload"></i> Cargar sesión
                 </button>
+                <input type="file" id="inputSesionJSON" accept=".json" style="display:none">
                 <button id="btnBorrarSesion" style="background:#883c2c;margin:0;padding:0.4rem 0.9rem;font-size:0.78rem">
                     <i class="fas fa-trash"></i> Borrar
                 </button>
@@ -4384,30 +4387,42 @@
     function guardarSesion() {
         sincronizarInventarios();
         const sesion = {
+            version:    '2.0',
             fecha:      new Date().toISOString(),
             inputs:     recolectarInputs(),
             inventarios: inventariosData.map(i => ({...i})),
             bom:         bomData.map(b => ({...b})),
             compras:     comprasData.map(c => ({...c})),
+            pmpSkuData:  pmpSkuData.map(s => ({...s})),
             portada: {
-                autor:    document.getElementById('portadaAutor')?.value  || '',
-                empresa:  document.getElementById('portadaEmpresa')?.value || '',
-                curso:    document.getElementById('portadaCurso')?.value   || '',
-                profesor: document.getElementById('portadaProfesor')?.value || '',
-                periodo:  document.getElementById('portadaPeriodo')?.value  || '',
-                fecha:    document.getElementById('portadaFecha')?.value    || '',
+                autor:    document.getElementById('portadaAutor')?.value    || '',
+                empresa:  document.getElementById('portadaEmpresa')?.value  || '',
+                curso:    document.getElementById('portadaCurso')?.value     || '',
+                profesor: document.getElementById('portadaProfesor')?.value  || '',
+                periodo:  document.getElementById('portadaPeriodo')?.value   || '',
+                fecha:    document.getElementById('portadaFecha')?.value     || '',
             }
         };
         try {
+            // Guardar en localStorage como respaldo
             localStorage.setItem(SESION_KEY, JSON.stringify(sesion));
-            const ahora = new Date().toLocaleString('es-PE');
-            document.getElementById('sesionEstado').textContent = '✅ Guardado: ' + ahora;
+
+            // Descargar como archivo JSON
+            const blob = new Blob([JSON.stringify(sesion, null, 2)], { type: 'application/json' });
+            const url  = URL.createObjectURL(blob);
+            const a    = document.createElement('a');
+            const fecha = new Date().toISOString().slice(0,10);
+            a.href     = url;
+            a.download = `MRP2_sesion_${fecha}.json`;
+            a.click();
+            setTimeout(() => URL.revokeObjectURL(url), 2000);
+
+            document.getElementById('sesionEstado').textContent = '✅ Sesión descargada como JSON';
             document.getElementById('sesionEstado').style.color = '#4ade80';
-            // Auto-guardar también en 3 segundos para confirmar
             setTimeout(() => {
-                document.getElementById('sesionEstado').textContent = '💾 Sesión guardada automáticamente';
+                document.getElementById('sesionEstado').textContent = '💾 Sesión guardada';
                 document.getElementById('sesionEstado').style.color = '#8bb3cc';
-            }, 3000);
+            }, 4000);
         } catch(e) {
             alert('⚠️ No se pudo guardar: ' + e.message);
         }
@@ -4486,9 +4501,9 @@ Se reemplazarán los datos actuales.`)) return;
     }
 
     function borrarSesion() {
-        if (!confirm('¿Borrar la sesión guardada? Esta acción no se puede deshacer.')) return;
+        if (!confirm('¿Borrar la sesión del localStorage? El archivo JSON guardado en tu PC no se elimina.')) return;
         localStorage.removeItem(SESION_KEY);
-        document.getElementById('sesionEstado').textContent = '🗑️ Sesión borrada';
+        document.getElementById('sesionEstado').textContent = '🗑️ Sesión local borrada';
         document.getElementById('sesionEstado').style.color = '#f87171';
         setTimeout(() => {
             document.getElementById('sesionEstado').textContent = '';
