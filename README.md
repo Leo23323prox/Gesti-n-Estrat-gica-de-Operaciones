@@ -1,1 +1,1 @@
-# Gesti-n-Estrat-gica-de-Operaciones
+# Gestion-Estrategica-de-Operaciones
